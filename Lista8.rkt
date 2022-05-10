@@ -4,6 +4,17 @@
 ;Zdefiniuj procedurę mreverse!, która odwraca listę mutowalną „w miejscu”, czyli nie
 ;tworzy nowych bloczków mcons-em, a odpowiednio przepina wskaźniki.
 
+(define (mreverse! xs)
+  (define (it q prev next)
+    (cond [(null? next)
+           (set-mcdr! q prev) q]
+          [else(set-mcdr! q prev)
+               (it next q (mcdr next))]))
+  (it xs null (mcdr xs)))
+(define m (mcons 1 (mcons 2 (mcons 3 null))))
+(mreverse! m)
+
+
 ;Zadanie 2. (2 pkt)
 ;Wzorując się na implementacji kolejek z wykładu zaimplementuj kolejki dwukierunkowe, czyli takie w których można wstawiać i usuwać element zarówno z jednej jak i z
 ;drugiej strony kolejki. Do implementacji kolejek dwukierunkowych użyj list dwukierunkowych, czyli takich w których każdy węzeł ma wskaźnik na następny i poprzedni
@@ -60,6 +71,22 @@
 ;pomocą danych.
 ;2
 ;MP22 @ II UWr Lista 8
+(define (morse-code napis)
+  (coder (string->list napis))
+  )
+
+(define (coder lista)
+  (cond[(empty? lista) ""]
+       [(equal? (car lista) #\space)
+        (coder (cdr lista))]
+       [(eq? (assoc (string (car lista) ) slownik2 ) #f)
+        ""]
+       [#t
+        (string-append " "(cdr (assoc (string (car lista) ) slownik2 ) ) (coder (cdr lista) ) )]
+       )
+  )
+
+
 
 ;Zadanie 7. (2 pkt)
 ;Napisz funkcję tłumaczącą kod Morse’a na zwykły napis, np.
@@ -72,83 +99,85 @@
 ;
 (define slownik
   (list
-   (cons "._ "  "A")
-   (cons "_... "  "B")
-   (cons "_._.  "  "C")
-   (cons "_.. "  "D")
-   (cons ". "  "E")
-   (cons ".._. "  "F")
-   (cons "__. "  "G")
-   (cons ".... "  "H")
-   (cons ".. "  "I")
-   (cons ".___ "  "J")
-   (cons "_._ "  "K")
-   (cons "._.. "  "L")
-   (cons "__ "  "M")
-   (cons "_. "  "N")
-   (cons "___ "  "O")
-   (cons ".__. "  "P")
-   (cons "__._ "  "Q")
-   (cons "._. "  "R")
-   (cons "... "  "S")
-   (cons "_ "  "T")
-   (cons ".._ "  "U")
-   (cons "..._ "  "V")
-   (cons ".__ "  "W")
-   (cons "_.._ "  "X")
-   (cons "_.__ "  "Y")
-   (cons "__.. "  "Z")
-   (cons "_____ "  "0")
-   (cons ".____ "  "1")
-   (cons "..___ "  "2")
-   (cons "...__ "  "3")
-   (cons "...._ "  "4")
-   (cons "..... "  "5")
-   (cons "_.... "  "6")
-   (cons "__... "  "7")
-   (cons "___.. "  "8")
-   (cons "____. "  "9")
+   (cons "._"  "A")
+   (cons "_..."  "B")
+   (cons "_._."  "C")
+   (cons "_.."  "D")
+   (cons "."  "E")
+   (cons ".._."  "F")
+   (cons "__."  "G")
+   (cons "...."  "H")
+   (cons ".."  "I")
+   (cons ".___"  "J")
+   (cons "_._"  "K")
+   (cons "._.."  "L")
+   (cons "__"  "M")
+   (cons "_."  "N")
+   (cons "___"  "O")
+   (cons ".__."  "P")
+   (cons "__._"  "Q")
+   (cons "._."  "R")
+   (cons "..."  "S")
+   (cons "_"  "T")
+   (cons ".._"  "U")
+   (cons "..._"  "V")
+   (cons ".__"  "W")
+   (cons "_.._"  "X")
+   (cons "_.__"  "Y")
+   (cons "__.."  "Z")
+   (cons "_____"  "0")
+   (cons ".____"  "1")
+   (cons "..___"  "2")
+   (cons "...__"  "3")
+   (cons "...._"  "4")
+   (cons "....."  "5")
+   (cons "_...."  "6")
+   (cons "__..."  "7")
+   (cons "___.."  "8")
+   (cons "____."  "9")
    
    )
   )
 (define slownik2
   (list
-   (cons "A" "._ ")
-   (cons "B" "_... ")
-   (cons "C" "_._.  "  )
-   (cons "D" "_.. "  )
-   (cons "E" ". ")
-   (cons "F" ".._. "  )
-   (cons "G" "__. "  )
-   (cons "H" ".... "  )
-   (cons "I" ".. "  )
-   (cons "J" ".___ "  )
-   (cons "K" "_._ "  )
-   (cons "L" "._.. "  )
-   (cons "M" "__ "  )
-   (cons "N" "_. "  )
-   (cons "O" "___ "  )
-   (cons "P" ".__. "  )
-   (cons "Q" "__._ "  )
-   (cons "R" "._. "  )
-   (cons "S" "... "  )
-   (cons "T" "_ "  )
-   (cons "U" ".._ "  )
-   (cons "V" "..._ "  )
-   (cons "W" ".__ "  )
-   (cons "X" "_.._ "  )
-   (cons "Y" "_.__ "  )
-   (cons "Z" "__.. "  )
-   (cons "0" "_____ "  )
-   (cons "1" ".____ "  )
-   (cons "2" "..___ "  )
-   (cons "3" "...__ "  )
-   (cons "4" "...._ "  )
-   (cons "5" "..... "  )
-   (cons "6" "_.... "  )
-   (cons "7" "__... "  )
-   (cons "8" "___.. "  )
-   (cons "9" "____. "  )
+   (cons "A" "._")
+   (cons "B" "_...")
+   (cons "C" "_._."  )
+   (cons "D" "_.."  )
+   (cons "E" ".")
+   (cons "F" ".._."  )
+   (cons "G" "__."  )
+   (cons "H" "...."  )
+   (cons "I" ".."  )
+   (cons "J" ".___"  )
+   (cons "K" "_._"  )
+   (cons "L" "._.."  )
+   (cons "M" "__"  )
+   (cons "N" "_."  )
+   (cons "O" "___"  )
+   (cons "P" ".__."  )
+   (cons "Q" "__._"  )
+   (cons "R" "._."  )
+   (cons "S" "..."  )
+   (cons "T" "_"  )
+   (cons "U" ".._"  )
+   (cons "V" "..._"  )
+   (cons "W" ".__"  )
+   (cons "X" "_.._"  )
+   (cons "Y" "_.__"  )
+   (cons "Z" "__.."  )
+   (cons "0" "_____"  )
+   (cons "1" ".____"  )
+   (cons "2" "..___"  )
+   (cons "3" "...__"  )
+   (cons "4" "...._"  )
+   (cons "5" "....."  )
+   (cons "6" "_...."  )
+   (cons "7" "__..."  )
+   (cons "8" "___.."  )
+   (cons "9" "____."  )
+   (cons "." "._._._")
+   (cons "," "__..__")
    
    )
   )
@@ -206,17 +235,27 @@
        [#t (szukanie-spacji (cdr kod) poczatek (+ 1 indeks) pamiec)]
     )
   )
-(define (morse-fold kod poczatek koniec)
-  (cond[(eq? poczatek koniec)
-        null]
+
+(define (split x result elem)
+  [cond
+    [[empty? x] (append result (list elem))]
+    [[equal? (first x) #\space] (split (rest x) (append result(list elem )) '())]
+    [else (split (rest x) result (append elem (list (first x))))]
+    ])
+
+
+  
+(define (morse-fold kod)
+  (cond[(empty? kod)
+        ""]
+       [(eq? #f (assoc (list->string (car kod))  slownik ))
+        (string-append " " (morse-fold (cdr kod) ))]
        [#t
-        (string-append (cdr (assoc (szukanie-spacji kod poczatek poczatek (list->string kod))  slownik ))
-                       (morse-fold
-                        (string->list (szukanie-spacji kod poczatek poczatek (list->string kod)))
-                        (szukanie-spacji kod poczatek poczatek (list->string kod)) koniec) )]
+        (string-append (cdr (assoc (list->string (car kod))  slownik ))
+                       (morse-fold (cdr kod) ) )]
      )
   )
 
 (define (morse-decode kod)
-  (morse-fold (string->list kod) 0 (string-length kod))
+  (morse-fold (split (string->list kod) '() '() ))
   )
