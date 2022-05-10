@@ -4,6 +4,17 @@
 ;Zdefiniuj procedurę mreverse!, która odwraca listę mutowalną „w miejscu”, czyli nie
 ;tworzy nowych bloczków mcons-em, a odpowiednio przepina wskaźniki.
 
+(define (mreverse! xs)
+  (define (it q prev next)
+    (cond [(null? next)
+           (set-mcdr! q prev) q]
+          [else(set-mcdr! q prev)
+               (it next q (mcdr next))]))
+  (it xs null (mcdr xs)))
+(define m (mcons 1 (mcons 2 (mcons 3 null))))
+(mreverse! m)
+
+
 ;Zadanie 2. (2 pkt)
 ;Wzorując się na implementacji kolejek z wykładu zaimplementuj kolejki dwukierunkowe, czyli takie w których można wstawiać i usuwać element zarówno z jednej jak i z
 ;drugiej strony kolejki. Do implementacji kolejek dwukierunkowych użyj list dwukierunkowych, czyli takich w których każdy węzeł ma wskaźnik na następny i poprzedni
@@ -60,6 +71,22 @@
 ;pomocą danych.
 ;2
 ;MP22 @ II UWr Lista 8
+(define (morse-code napis)
+  (coder (string->list napis))
+  )
+
+(define (coder lista)
+  (cond[(empty? lista) ""]
+       [(equal? (car lista) #\space)
+        (coder (cdr lista))]
+       [(eq? (assoc (string (car lista) ) slownik2 ) #f)
+        ""]
+       [#t
+        (string-append " "(cdr (assoc (string (car lista) ) slownik2 ) ) (coder (cdr lista) ) )]
+       )
+  )
+
+
 
 ;Zadanie 7. (2 pkt)
 ;Napisz funkcję tłumaczącą kod Morse’a na zwykły napis, np.
@@ -149,6 +176,8 @@
    (cons "7" "__..."  )
    (cons "8" "___.."  )
    (cons "9" "____."  )
+   (cons "." "._._._")
+   (cons "," "__..__")
    
    )
   )
