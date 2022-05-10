@@ -4,17 +4,50 @@
 ;Zdefiniuj procedurę mreverse!, która odwraca listę mutowalną „w miejscu”, czyli nie
 ;tworzy nowych bloczków mcons-em, a odpowiednio przepina wskaźniki.
 
+;(define (mreverse! xs)
+  ;(define (it q prev next)
+   ; (cond [(null? next)
+   ;        (set-mcdr! q prev) q]
+  ;        [else(set-mcdr! q prev)
+ ;              (it next q (mcdr next))]))
+ ; (it xs null (mcdr xs)))
+;(define m (mcons 1 (mcons 2 (mcons 3 null))))
+;(mreverse! m)
+
+(define (mlist xs)
+    (if (null? xs) null
+    (mcons (car xs) (mlist (cdr xs)))
+    )
+)
+
+
+(define a (mlist '(1 2 3 4)))
+
+a
+
 (define (mreverse! xs)
-  (define (it q prev next)
-    (cond [(null? next)
-           (set-mcdr! q prev) q]
-          [else(set-mcdr! q prev)
-               (it next q (mcdr next))]))
-  (it xs null (mcdr xs)))
-(define m (mcons 1 (mcons 2 (mcons 3 null))))
-(mreverse! m)
+    (define (get-last xs)
+        (if (null? (mcdr xs)) xs
+            (get-last (mcdr xs))
+        )
+    )
+    (define (mreverse_ xs x)
+        (if (null? xs) null
+            (let ([next (mcdr xs)])
+                (set-mcdr! xs x)
+                (mreverse_ next xs)
+            ) 
+        )
+    )
+    (let ([new-head (get-last xs)])
+        (mreverse_ xs null)
+        new-head
+    )
+)
 
+(set! a (mreverse! a))
 
+a
 ;Zadanie 2. (2 pkt)
 ;Wzorując się na implementacji kolejek z wykładu zaimplementuj kolejki dwukierunkowe, czyli takie w których można wstawiać i usuwać element zarówno z jednej jak i z
 ;drugiej strony kolejki. Do implementacji kolejek dwukierunkowych użyj list dwukierunkowych, czyli takich w których każdy węzeł ma wskaźnik na następny i poprzedni
@@ -30,6 +63,126 @@
 ;Zwróć uwagę na to, które definicje powinny zostać wyeksportowane, a które powinny
 ;zostać prywatne dla modułu. W module parsing.rkt zadbaj o odpowiednie kontrakty
 ;dla eksportowanych procedur.
+
+;Kod z wykładu
+;=======================================================================================================
+(require "Syntax.rkt")
+(require (only-in plait s-exp-content))
+(provide parse-exp)
+
+; Kod pokazany na wykładzie zawierał dwie drobne usterki
+; i dlatego nie działał:
+;
+; 1. Definicja gramatyki zawierała błąd składniowy (jeden
+;    nawias był w niewłaściwym miejscu
+; 2. Parser działa zachłannie: wybiera pierwszą pasującą regułę,
+;    więc kolejność reguł ma znaczenie. Ponieważ na wykładzie
+;    kilkukrotnie przerabialiśmy kod, zaczynając od takiego,
+;    gdzie kolejnośc reguł nie miała aż tak dużego znaczenia
+;    definicja wyrażeń w pewnym momencie przestała być poprawna
+;    właśnie ze względu na złą kolejność reguł.
+;
+; Poniższy kod ma już naniesione odpowiednie poprawki.
+
+(struct parse-ok (elems rest))
+
+(define (parse-with-rule grammar rule toks)
+  (match rule
+    ['() (parse-ok '() toks)]
+    [(cons item rule)
+     (match (parse-item grammar item toks)
+       [(parse-ok xs1 toks)
+        (match (parse-with-rule grammar rule toks)
+          [(parse-ok xs2 toks)
+           (parse-ok (append xs1 xs2) toks)]
+          [#f #f])]
+       [#f #f])]))
+
+(define (parse-item grammar item toks)
+  (cond
+    [(eq? item 'ANY)    (parse-token (lambda (x) #t) toks)]
+    [(eq? item 'NUMBER) (parse-token number? toks)]
+    [(eq? item 'SYMBOL) (parse-token symbol? toks)]
+    [(symbol? item)
+     (if (and (cons? toks) (eq? (car toks) item))
+         (parse-ok '() (cdr toks))
+         #f)]
+    [(list? item)
+     (if (and (cons? toks) (list? (car toks)))
+         (match (parse-with-rule grammar item (car toks))
+           [(parse-ok xs '()) (parse-ok xs (cdr toks))]
+           [(parse-ok xs toks) #f]
+           [#f #f])
+         #f)]
+    [(string? item)
+     (match (parse-nonterminal grammar item toks)
+       [(parse-ok x toks) (parse-ok (list x) toks)]
+       [#f #f])]))
+
+(define (parse-token p? toks)
+  (if (and (cons? toks) (p? (car toks)))
+      (parse-ok (list (car toks)) (cdr toks))
+       #f))
+
+(define (parse-nonterminal grammar name toks)
+  (define def (assoc name grammar))
+  (parse-with-rules grammar (cdr def) toks))
+
+(define (parse-with-rules grammar rules toks)
+  (match rules
+    ['() #f]
+    [(cons (list rule action) rules)
+     (match (parse-with-rule grammar rule toks)
+       [(parse-ok xs toks) (parse-ok (apply action xs) toks)]
+       [#f (parse-with-rules grammar rules toks)])]))
+
+(define (run-named-parser grammar name toks)
+  (match (parse-nonterminal grammar name toks)
+    [(parse-ok x '()) x]
+    [else             (error "Syntax error")]))
+
+; ====================================================
+; Gramatyki bezkontekstowe
+
+; * Terminale (tokeny)
+; * Nieterminale (np. "expression", "operator")
+; * Lista produkcji:
+;   "expression" -> NUMBER
+;   "expression" -> "expression" "operator" "expression"
+
+; 2 + 2 + 2
+
+; "expression" -> "expression" "add-operator" "mult-exp"
+; "expression" -> "mult-exp"
+; "mult-exp"   -> "mult-exp" "mult-operator" "atom-exp"
+; "mult-exp"   -> "atom-exp"
+; "atom-exp"   -> NUMBER
+; "atom-exp"   -> ( "expression" )
+
+; ====================================================
+
+(define grammar
+  `(("operator"
+     ((+) ,op-add)
+     ((-) ,op-sub)
+     ((*) ,op-mul)
+     ((/) ,op-div))
+    
+    ("expression"
+     (("simple-expr" "operator" "simple-expr")
+          ,(lambda (e1 op e2) (exp-op op e1 e2)))
+     (("simple-expr") ,(lambda (e) e)))
+    
+    ("simple-expr"
+     ((NUMBER)           ,exp-number)
+     (( ("expression") ) ,(lambda (e) e)))))
+
+(define (run-exp-parser se)
+  (run-named-parser grammar "expression" (list se)))
+
+(define (parse-exp se)
+  (run-exp-parser (s-exp-content se)))
+;=======================================================================================================
 
 ;Zadanie 4.
 ;Zmodyfikuj parser wyrażeń arytmetycznych z wykładu tak, by nie konstruował abstrakcyjnego drzewa rozbioru (drzewa typu Exp), ale od razu obliczał podane wyrażenie
@@ -59,6 +212,12 @@
 ;((" operator " " simple-expr ") ,(...) )
 ;(() ,(...) ) )
 ;Uzupełnij akcje semantyczne tak, by zmodyfikowany parser dalej poprawnie konstruował wyrażenia. Pamiętaj, że wartością funkcji może też być funkcja.
+
+
+
+
+
+
 
 ;Zadanie 6. (2 pkt)
 ;Napisz funkcję tłumaczącą napis złożony z liter, cyfr, białych znaków i wybranych znaków interpunkcyjnych na kod Morse’a. Kropkę koduj jako znak kropki (#\.), kreskę jako
